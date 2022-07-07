@@ -1,0 +1,3 @@
+# Pomadorik
+
+> Golang + Fyne 
