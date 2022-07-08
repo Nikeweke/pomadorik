@@ -4,7 +4,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	// "fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/layout"
@@ -27,59 +26,57 @@ var TextColors = map[string]color.RGBA{
   "lightgrey2": color.RGBA{142, 142, 142, 255},
 }
 
-// 1. 3 buttons + timer - done 
-// 2. timer - done 
-// 2. tray hide
-// 3. sound play - done
+const APP_NAME = "Pomadorik"
+const APP_WIDTH = 250
+const APP_HEIGHT = 250
 
-const DEFAULT_TIMER = 5
-// const DEFAULT_TIMER = 1200 // 1200 sec = 20 min
-const DEFAULT_LONG_BREAK = 600
-const DEFAULT_SHORT_BREAK = 300 
+var DEFAULT_TIMERS = map[string]int{ // pause name: seconds
+	"TOMATO": 5, // 1200 sec = 20 min
+	"SHORT": 300,
+	"LONG": 600,
+}
 
-var TIMER = DEFAULT_TIMER 
+var TIMER = DEFAULT_TIMERS["TOMATO"] 
 var TICKER *time.Ticker = nil
-// var TIMER_TXT
 
+type BtnHandlerFn func(string, *canvas.Text) func()
 
 func main() {
 	app := app.New()
-	window := app.NewWindow("Pomadoro")
-	window.Resize(fyne.NewSize(300, 300))
+	window := app.NewWindow(APP_NAME)
+	window.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 	fmt.Println("window init...")
 
-	content := buildContent()
+	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
+		return func() {
+			startCountdown(DEFAULT_TIMERS[timerName], timerTxt)
+		}
+	})
 
 	window.SetContent(content)
 	window.ShowAndRun()
 }
 
-func buildContent() fyne.CanvasObject {
+func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	greenColor := TextColors["green"]
 
 	timer := buildTxtWithStyle(formatTimer(TIMER), greenColor, 40)
-	tomatoBtn := widget.NewButton("Tomato", func() {
-		startCountdown(DEFAULT_TIMER, timer)
-	})
-	shortBrakeBtn := widget.NewButton("Short brake", func() {
-		startCountdown(DEFAULT_SHORT_BREAK, timer)
-	})
-	longBrakeBtn := widget.NewButton("Long brake", func() {
-		startCountdown(DEFAULT_LONG_BREAK, timer)
-	})
+	tomatoBtn := widget.NewButton("Tomato", onBtnHandler("TOMATO", timer))
+	shortBrakeBtn := widget.NewButton("Short brake", onBtnHandler("SHORT", timer))
+	longBrakeBtn := widget.NewButton("Long brake", onBtnHandler("LONG", timer))
 
 	content := fyne.NewContainerWithLayout(
-		// layout.NewGridWrapLayout(fyne.NewSize(200, 200)),
 		layout.NewVBoxLayout(),
 
+		// header (timer)
 		container.New(layout.NewCenterLayout(), timer),
 
+		// btns 
 		tomatoBtn,
-		
-		buildLabelTxt(""),
+		buildSpace(),
 
-		longBrakeBtn,
 		shortBrakeBtn,
+		longBrakeBtn,
 	)
 	return content
 }
@@ -97,11 +94,22 @@ func buildLabelTxt(title string) *canvas.Text {
 	return txt
 }
 
-func startCountdown(defaultTime int, timer *canvas.Text) {
-		// fmt.Println("tapped")
+func buildSpace() *canvas.Text {
+	return buildLabelTxt("")
+}
+
+func updateTimerTxt(timer int, timerTxt *canvas.Text) {
+	timerTxt.Text = formatTimer(timer) 
+	timerTxt.Refresh() 
+}
+
+func startCountdown(defaultTime int, timerTxt *canvas.Text) {
+		// if timer already started, at again start, just stop it 
+		TIMER = defaultTime
+		updateTimerTxt(TIMER, timerTxt)
+
 		if TICKER != nil {
 			TICKER.Stop()
-			TIMER = defaultTime
 		}
 
 		ticker := startTimer(func (ticker *time.Ticker) {
@@ -109,9 +117,10 @@ func startCountdown(defaultTime int, timer *canvas.Text) {
 			if TIMER == 0 {
 				playSound()
 				ticker.Stop()
+				TICKER = nil
 			}
-			timer.Text = formatTimer(TIMER) 
-			timer.Refresh() 
+
+			updateTimerTxt(TIMER, timerTxt)
 		})
 		TICKER = ticker
 }
@@ -120,7 +129,6 @@ func startCountdown(defaultTime int, timer *canvas.Text) {
 func startTimer(onTickFn func(*time.Ticker)) *time.Ticker {
 	ticker := time.NewTicker(1 * time.Second)
 	done := make(chan bool)
-
 	go func() {
 		for {
 			select {
@@ -130,7 +138,6 @@ func startTimer(onTickFn func(*time.Ticker)) *time.Ticker {
 			}
 		}
 	}()
-
 	return ticker
 }
 
@@ -159,5 +166,14 @@ func playSound() {
 func formatTimer(timer int) string {
 	minutes := TIMER / 60
 	seconds := TIMER % 60
-	return fmt.Sprintf("%d:%d", minutes, seconds)
+	minZero := ""
+	secZero := ""
+
+	if minutes < 10 {
+		minZero = "0"
+	}
+	if seconds < 10 {
+		secZero = "0"
+	}
+	return fmt.Sprintf("%s%d:%s%d", minZero, minutes, secZero, seconds)
 }

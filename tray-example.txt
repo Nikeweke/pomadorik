@@ -16,17 +16,17 @@ import (
 
 var thisApp fyne.App
 var mainWindow fyne.Window
-var sabWindow fyne.Window
 
 const APP_NAME = "Pomadorik"
 
 func main() {
-	// Load Config
-	// Load Auth tokens
+
     // Register systray's starting and exiting functions
 	systray.Register(onReady, onExit)
+
 	// Set up base GUI
 	thisApp = app.NewWithID("Test Application")
+
 	// thisApp.SetIcon(resourceIconPng)
 	mainWindow = thisApp.NewWindow("Hidden Main Window")
 	mainWindow.Resize(fyne.NewSize(800, 800))
@@ -35,18 +35,17 @@ func main() {
 	mainWindow.SetCloseIntercept(func() {
 		mainWindow.Hide()
 	})
-	sabWindow = thisApp.NewWindow("SAB Window")
-	sabWindow.Resize(fyne.NewSize(640, 480))
-	sabWindow.Hide()
-	sabWindow.SetCloseIntercept(func() {
-		sabWindow.Hide()
-	})
+
+
 	thisApp.Run()
 }
 
 func onExit() { 
 
 }
+
+
+// https://pkg.go.dev/github.com/getlantern/systray
 
 func onReady() {
 	// Refresh any expired tokens
