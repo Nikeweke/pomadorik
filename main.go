@@ -30,11 +30,11 @@ var TextColors = map[string]color.RGBA{
 const APP_NAME = "Pomadorik"
 const APP_WIDTH = 250
 const APP_HEIGHT = 250
-const SOUND_FILE = "click-start.mp3"
+const SOUND_FILE = "click1.mp3"
 
 // pause name: seconds
 var DEFAULT_TIMERS = map[string]int{ 
-	"TOMATO": 5, // 1200 sec = 20 min
+	"TOMATO": 3, // 1200 sec = 20 min
 	"SHORT": 300,
 	"LONG": 600,
 }
@@ -46,12 +46,21 @@ type BtnHandlerFn func(string, *canvas.Text) func()
 var mainWindow fyne.Window
 
 func main() {
-	app := app.New()
+	app := app.NewWithID(APP_NAME)
 	mainWindow = app.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 	fmt.Println("window init...")
 
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
+		// set on "space" start a tomato timer
+		// https://developer.fyne.io/api/v1.4/keyname.html
+		mainWindow.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
+			switch k.Name {
+			case fyne.KeySpace:
+				startCountdown(DEFAULT_TIMERS["TOMATO"], timerTxt)
+			}
+		})
+
 		return func() {
 			startCountdown(DEFAULT_TIMERS[timerName], timerTxt)
 		}
@@ -59,9 +68,15 @@ func main() {
 
 	mainWindow.SetContent(content)
 	mainWindow.Show()
+
 	// mainWindow.ShowAndRun()
 
 	app.Run()
+}
+
+func showNotification(a fyne.App) {
+	time.Sleep(time.Second * 2)
+	a.SendNotification(fyne.NewNotification("Example Title", "Example Content"))
 }
 
 func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
@@ -87,6 +102,8 @@ func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	)
 	return content
 }
+
+
 
 func buildTxtWithStyle(title string, textColor color.RGBA, textSize float32) *canvas.Text {
 	txt := canvas.NewText(title, textColor)
