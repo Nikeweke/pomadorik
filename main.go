@@ -35,9 +35,18 @@ var mainWindow fyne.Window
 
 func main() {
 	app := app.NewWithID(APP_NAME)
+
+	// setuping window 
 	mainWindow = app.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 	mainWindow.SetMaster()
+	// setting intercept not to close app, but hide window,
+	// and close only via tray 
+	// mainWindow.SetCloseIntercept(func() {
+	// 	mainWindow.Hide()
+	// })
+
+
 	fmt.Println("window init...")
 
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
