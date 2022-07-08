@@ -10,6 +10,7 @@ import (
 
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep/effects"
 	
 	"os"
 	"log"
@@ -20,17 +21,19 @@ import (
 
 var TextColors = map[string]color.RGBA{
   "green": color.RGBA{85, 165, 34, 1},
-  "grey": color.RGBA{82, 82, 82, 1},
-  "white": color.RGBA{255, 255, 255, 1},
-  "lightgrey": color.RGBA{57, 57, 57, 255},
-  "lightgrey2": color.RGBA{142, 142, 142, 255},
+  // "grey": color.RGBA{82, 82, 82, 1},
+  // "white": color.RGBA{255, 255, 255, 1},
+  // "lightgrey": color.RGBA{57, 57, 57, 255},
+  // "lightgrey2": color.RGBA{142, 142, 142, 255},
 }
 
 const APP_NAME = "Pomadorik"
 const APP_WIDTH = 250
 const APP_HEIGHT = 250
+const SOUND_FILE = "click-start.mp3"
 
-var DEFAULT_TIMERS = map[string]int{ // pause name: seconds
+// pause name: seconds
+var DEFAULT_TIMERS = map[string]int{ 
 	"TOMATO": 5, // 1200 sec = 20 min
 	"SHORT": 300,
 	"LONG": 600,
@@ -40,11 +43,12 @@ var TIMER = DEFAULT_TIMERS["TOMATO"]
 var TICKER *time.Ticker = nil
 
 type BtnHandlerFn func(string, *canvas.Text) func()
+var mainWindow fyne.Window
 
 func main() {
 	app := app.New()
-	window := app.NewWindow(APP_NAME)
-	window.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
+	mainWindow = app.NewWindow(APP_NAME)
+	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 	fmt.Println("window init...")
 
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
@@ -53,8 +57,11 @@ func main() {
 		}
 	})
 
-	window.SetContent(content)
-	window.ShowAndRun()
+	mainWindow.SetContent(content)
+	mainWindow.Show()
+	// mainWindow.ShowAndRun()
+
+	app.Run()
 }
 
 func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
@@ -118,6 +125,7 @@ func startCountdown(defaultTime int, timerTxt *canvas.Text) {
 				playSound()
 				ticker.Stop()
 				TICKER = nil
+				mainWindow.RequestFocus()
 			}
 
 			updateTimerTxt(TIMER, timerTxt)
@@ -142,15 +150,21 @@ func startTimer(onTickFn func(*time.Ticker)) *time.Ticker {
 }
 
 func playSound() {
-	soundFile := "click1.mp3"
-	f, err := os.Open("./sounds/" + soundFile)
+	f, err := os.Open("./sounds/" + SOUND_FILE)
 	if err != nil {
-		log.Fatal("Unable to open sound " + soundFile)
+		log.Fatal("Unable to open sound " + SOUND_FILE)
 	}
 
 	stream, format, err := mp3.Decode(f)
 	if err != nil {
-		log.Fatal("Unable to stream sound " + soundFile)
+		log.Fatal("Unable to stream sound " + SOUND_FILE)
+	}
+
+	volume := effects.Volume{ 
+		Streamer: stream,
+		Base: 2,
+		Volume: 1.8,
+		Silent: false,
 	}
 
 	// activate speakers 
@@ -160,7 +174,7 @@ func playSound() {
 	)
 
 	// play
-	speaker.Play(stream)
+	speaker.Play(&volume) 
 }
 
 func formatTimer(timer int) string {
