@@ -27,18 +27,6 @@ var TextColors = map[string]color.RGBA{
   // "lightgrey2": color.RGBA{142, 142, 142, 255},
 }
 
-const APP_NAME = "Pomadorik"
-const APP_WIDTH = 250
-const APP_HEIGHT = 250
-const SOUND_FILE = "click1.mp3"
-
-// pause name: seconds
-var DEFAULT_TIMERS = map[string]int{ 
-	"TOMATO": 3, // 1200 sec = 20 min
-	"SHORT": 300,
-	"LONG": 600,
-}
-
 var TIMER = DEFAULT_TIMERS["TOMATO"] 
 var TICKER *time.Ticker = nil
 
@@ -49,6 +37,7 @@ func main() {
 	app := app.NewWithID(APP_NAME)
 	mainWindow = app.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
+	mainWindow.SetMaster()
 	fmt.Println("window init...")
 
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
