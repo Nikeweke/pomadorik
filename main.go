@@ -28,10 +28,10 @@ import (
 
 var TextColors = map[string]color.RGBA{
   "green": color.RGBA{85, 165, 34, 1},
-  // "grey": color.RGBA{82, 82, 82, 1},
-  // "white": color.RGBA{255, 255, 255, 1},
-  // "lightgrey": color.RGBA{57, 57, 57, 255},
-  // "lightgrey2": color.RGBA{142, 142, 142, 255},
+  "grey": color.RGBA{82, 82, 82, 1},
+  "white": color.RGBA{255, 255, 255, 1},
+  "lightgrey": color.RGBA{57, 57, 57, 255},
+  "lightgrey2": color.RGBA{142, 142, 142, 255},
 }
 
 var TIMER = DEFAULT_TIMERS["TOMATO"] 
@@ -63,8 +63,6 @@ func main() {
 		mainWindow.Hide()
 	})
 
-
-
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
 		TIMER_TXT = timerTxt
 
@@ -85,6 +83,7 @@ func main() {
 	mainWindow.SetContent(content)
 	fmt.Println("window init...")
 
+	mainWindow.Show()
 	App.Run()
 }
 
@@ -99,16 +98,13 @@ func main() {
 // https://pkg.go.dev/github.com/getlantern/systray
 func onExit() {} 
 func onReady() {
-	// Refresh any expired tokens
 	// Set up menu
 	systray.SetTemplateIcon(icon.Data, icon.Data)
-	// systray.SetIcon(icon.Content())
-	
+
 	systray.SetTitle(APP_NAME)
 	systray.SetTooltip(APP_NAME)
 
-	mTimer := systray.AddMenuItem(fmt.Sprintf("%d", TICKER), "Timer") // returns *MenuItem and has title 
-	// mGSM.Disable()
+	mTimer := systray.AddMenuItem("Open", "Open") // returns *MenuItem and has title 
 	systray.AddSeparator()
 
 	mTomato := systray.AddMenuItem("Tomato", "Starts timer") // title, tooltip
@@ -195,6 +191,20 @@ func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 
 		shortBrakeBtn,
 		longBrakeBtn,
+		buildSpace(),
+
+		container.New(
+			layout.NewCenterLayout(), 
+			// container.New(layout.NewVBoxLayout(),
+				buildTxtWithStyle(
+					"Press \"Space\" to start Tomato",
+					TextColors["grey"],
+					10,
+				),
+			// ),
+
+		),
+			
 	)
 	return content
 }
@@ -219,30 +229,33 @@ func buildSpace() *canvas.Text {
 func updateTimerTxt(timer int, timerTxt *canvas.Text) {
 	timerTxt.Text = formatTimer(timer) 
 	timerTxt.Refresh() 
+			
+	systray.SetTitle(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
+	systray.SetTooltip(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
 }
 
 func startCountdown(defaultTime int) {
+	if TICKER != nil {
+		TICKER.Stop()
+	}
 
-		// if timer already started, at again start, just stop it 
-		TIMER = defaultTime
+	// if timer already started, at again start, just stop it 
+	TIMER = defaultTime
+	updateTimerTxt(TIMER, TIMER_TXT)
+
+	TICKER = startTimer(func (ticker *time.Ticker) {
 		updateTimerTxt(TIMER, TIMER_TXT)
 
-		if TICKER != nil {
-			TICKER.Stop()
+		if TIMER == 0 {
+			playSound()
+			ticker.Stop()
+			TICKER = nil
+			mainWindow.Show()
+			mainWindow.RequestFocus()
 		}
 
-		ticker := startTimer(func (ticker *time.Ticker) {
-			TIMER--
-			if TIMER == 0 {
-				playSound()
-				ticker.Stop()
-				TICKER = nil
-				mainWindow.RequestFocus()
-			}
-
-			updateTimerTxt(TIMER, TIMER_TXT)
-		})
-		TICKER = ticker
+		TIMER--
+	})
 }
 
 // https://gobyexample.com/tickers
@@ -275,7 +288,7 @@ func playSound() {
 	volume := effects.Volume{ 
 		Streamer: stream,
 		Base: 2,
-		Volume: 1.8,
+		Volume: 1.6,
 		Silent: false,
 	}
 
