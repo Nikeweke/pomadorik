@@ -11,7 +11,14 @@ import (
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
 	"github.com/faiface/beep/effects"
-	
+
+	"github.com/getlantern/systray"
+	// "github.com/skratchdot/open-golang/open"
+	// "github.com/getlantern/systray/example/icon"
+	"pomadorik/icon"
+
+	"io/ioutil"
+	"path/filepath"
 	"os"
 	"log"
 	"fmt"
@@ -29,52 +36,143 @@ var TextColors = map[string]color.RGBA{
 
 var TIMER = DEFAULT_TIMERS["TOMATO"] 
 var TICKER *time.Ticker = nil
+var TIMER_TXT *canvas.Text = nil 
 
 type BtnHandlerFn func(string, *canvas.Text) func()
 var mainWindow fyne.Window
+var App fyne.App 
 
 func main() {
-	app := app.NewWithID(APP_NAME)
+	App = app.NewWithID(APP_NAME)
 
 	// setuping window 
-	mainWindow = app.NewWindow(APP_NAME)
+	mainWindow = App.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 	mainWindow.SetMaster()
+
+	// set icon 
+	r, _ := LoadResourceFromPath("./icon/app-icon.png")
+	mainWindow.SetIcon(r)
+
+	// Register systray's starting and exiting functions
+	systray.Register(onReady, onExit)
+
 	// setting intercept not to close app, but hide window,
 	// and close only via tray 
-	// mainWindow.SetCloseIntercept(func() {
-	// 	mainWindow.Hide()
-	// })
+	mainWindow.SetCloseIntercept(func() {
+		mainWindow.Hide()
+	})
 
 
-	fmt.Println("window init...")
 
 	content := buildContent(func (timerName string, timerTxt *canvas.Text) func() {
+		TIMER_TXT = timerTxt
+
 		// set on "space" start a tomato timer
 		// https://developer.fyne.io/api/v1.4/keyname.html
 		mainWindow.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
 			switch k.Name {
 			case fyne.KeySpace:
-				startCountdown(DEFAULT_TIMERS["TOMATO"], timerTxt)
+				startCountdown(DEFAULT_TIMERS["TOMATO"])
 			}
 		})
 
 		return func() {
-			startCountdown(DEFAULT_TIMERS[timerName], timerTxt)
+			startCountdown(DEFAULT_TIMERS[timerName])
 		}
 	})
 
 	mainWindow.SetContent(content)
-	mainWindow.Show()
+	fmt.Println("window init...")
 
-	// mainWindow.ShowAndRun()
-
-	app.Run()
+	App.Run()
 }
 
-func showNotification(a fyne.App) {
-	time.Sleep(time.Second * 2)
-	a.SendNotification(fyne.NewNotification("Example Title", "Example Content"))
+// // will show desktop notification
+// func showNotification(a fyne.App) {
+// 	time.Sleep(time.Second * 2)
+// 	a.SendNotification(fyne.NewNotification("Example Title", "Example Content"))
+// }
+
+
+// ==============================================> SYSTRAY
+// https://pkg.go.dev/github.com/getlantern/systray
+func onExit() {} 
+func onReady() {
+	// Refresh any expired tokens
+	// Set up menu
+	systray.SetTemplateIcon(icon.Data, icon.Data)
+	// systray.SetIcon(icon.Content())
+	
+	systray.SetTitle(APP_NAME)
+	systray.SetTooltip(APP_NAME)
+
+	mTimer := systray.AddMenuItem(fmt.Sprintf("%d", TICKER), "Timer") // returns *MenuItem and has title 
+	// mGSM.Disable()
+	systray.AddSeparator()
+
+	mTomato := systray.AddMenuItem("Tomato", "Starts timer") // title, tooltip
+	mShort := systray.AddMenuItem("Short break", "Starts timer of short break")
+	mLong := systray.AddMenuItem("Long break", "Starts timer of long break")
+	systray.AddSeparator()
+
+	mQuit := systray.AddMenuItem("Quit", "Quit this")
+
+	// Display Menu
+	go func() {
+		for {
+			select {
+			case <-mTimer.ClickedCh:
+				mainWindow.Show()
+
+			case <-mTomato.ClickedCh:
+				startCountdown(DEFAULT_TIMERS["TOMATO"])
+			
+			case <-mShort.ClickedCh:
+				startCountdown(DEFAULT_TIMERS["SHORT"])
+
+			case <-mLong.ClickedCh:
+				startCountdown(DEFAULT_TIMERS["LONG"])
+
+			case <-mQuit.ClickedCh:
+				// systray.Quit()
+				App.Quit()
+				return
+			}
+		}
+	}()
+}
+
+// ==============================================> ICON
+type Resource interface {
+	Name() string
+	Content() []byte
+}
+type StaticResource struct {
+	StaticName    string
+	StaticContent []byte
+}
+func (r *StaticResource) Name() string {
+	return r.StaticName
+}
+func (r *StaticResource) Content() []byte {
+	return r.StaticContent
+}
+
+func LoadResourceFromPath(path string) (Resource, error) {
+	bytes, err := ioutil.ReadFile(filepath.Clean(path))
+	if err != nil {
+			return nil, err
+	}
+	name := filepath.Base(path)
+	return NewStaticResource(name, bytes), nil
+}
+
+func NewStaticResource(name string, content []byte) *StaticResource {
+	return &StaticResource{
+			StaticName:    name,
+			StaticContent: content,
+	}
 }
 
 func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
@@ -101,8 +199,6 @@ func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	return content
 }
 
-
-
 func buildTxtWithStyle(title string, textColor color.RGBA, textSize float32) *canvas.Text {
 	txt := canvas.NewText(title, textColor)
 	txt.TextSize = textSize
@@ -125,10 +221,11 @@ func updateTimerTxt(timer int, timerTxt *canvas.Text) {
 	timerTxt.Refresh() 
 }
 
-func startCountdown(defaultTime int, timerTxt *canvas.Text) {
+func startCountdown(defaultTime int) {
+
 		// if timer already started, at again start, just stop it 
 		TIMER = defaultTime
-		updateTimerTxt(TIMER, timerTxt)
+		updateTimerTxt(TIMER, TIMER_TXT)
 
 		if TICKER != nil {
 			TICKER.Stop()
@@ -143,7 +240,7 @@ func startCountdown(defaultTime int, timerTxt *canvas.Text) {
 				mainWindow.RequestFocus()
 			}
 
-			updateTimerTxt(TIMER, timerTxt)
+			updateTimerTxt(TIMER, TIMER_TXT)
 		})
 		TICKER = ticker
 }
