@@ -235,13 +235,13 @@ func updateTimerTxt(timer int, timerTxt *canvas.Text) {
 }
 
 func startCountdown(defaultTime int) {
+	// if timer already started, at again start, just stop it 
+	TIMER = defaultTime
+	updateTimerTxt(TIMER, TIMER_TXT) 
+
 	if TICKER != nil {
 		TICKER.Stop()
 	}
-
-	// if timer already started, at again start, just stop it 
-	TIMER = defaultTime
-	updateTimerTxt(TIMER, TIMER_TXT)
 
 	TICKER = startTimer(func (ticker *time.Ticker) {
 		updateTimerTxt(TIMER, TIMER_TXT)
