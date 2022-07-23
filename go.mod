@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	fyne.io/fyne/v2 v2.2.3
+	fyne.io/systray v1.10.1-0.20220621085403-9a2652634e93
 	github.com/faiface/beep v1.1.0
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20220621085403-9a2652634e93 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
