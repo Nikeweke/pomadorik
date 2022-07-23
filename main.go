@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/layout"
@@ -12,9 +13,6 @@ import (
 	"github.com/faiface/beep/speaker"
 	"github.com/faiface/beep/effects"
 
-	"github.com/getlantern/systray"
-	// "github.com/skratchdot/open-golang/open"
-	// "github.com/getlantern/systray/example/icon"
 	"pomadorik/icon"
 
 	"io/ioutil"
@@ -48,17 +46,17 @@ func main() {
 	// setuping window 
 	mainWindow = App.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
-	mainWindow.SetMaster()
 
 	// set icon 
 	r, _ := LoadResourceFromPath("./icon/app-icon.png")
 	mainWindow.SetIcon(r)
 
-	// Register systray's starting and exiting functions
-	systray.Register(onReady, onExit)
+	if desk, ok := App.(desktop.App); ok {
+		setupSystray(desk)
+	}
 
 	// setting intercept not to close app, but hide window,
-	// and close only via tray 
+	// and close only via tray
 	mainWindow.SetCloseIntercept(func() {
 		mainWindow.Hide()
 	})
@@ -95,48 +93,24 @@ func main() {
 
 
 // ==============================================> SYSTRAY
-// https://pkg.go.dev/github.com/getlantern/systray
-func onExit() {} 
-func onReady() {
+func setupSystray(desk desktop.App) {
 	// Set up menu
-	systray.SetTemplateIcon(icon.Data, icon.Data)
+	desk.SetSystemTrayIcon(icon.Data)
 
-	systray.SetTitle(APP_NAME)
-	systray.SetTooltip(APP_NAME)
-
-	mTimer := systray.AddMenuItem("Open", "Open") // returns *MenuItem and has title 
-	systray.AddSeparator()
-
-	mTomato := systray.AddMenuItem("Tomato", "Starts timer") // title, tooltip
-	mShort := systray.AddMenuItem("Short break", "Starts timer of short break")
-	mLong := systray.AddMenuItem("Long break", "Starts timer of long break")
-	systray.AddSeparator()
-
-	mQuit := systray.AddMenuItem("Quit", "Quit this")
-
-	// Display Menu
-	go func() {
-		for {
-			select {
-			case <-mTimer.ClickedCh:
-				mainWindow.Show()
-
-			case <-mTomato.ClickedCh:
-				startCountdown(DEFAULT_TIMERS["TOMATO"])
-			
-			case <-mShort.ClickedCh:
-				startCountdown(DEFAULT_TIMERS["SHORT"])
-
-			case <-mLong.ClickedCh:
-				startCountdown(DEFAULT_TIMERS["LONG"])
-
-			case <-mQuit.ClickedCh:
-				// systray.Quit()
-				App.Quit()
-				return
-			}
-		}
-	}()
+	menu := fyne.NewMenu(APP_NAME,
+		fyne.NewMenuItem("Open", mainWindow.Show),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Tomato", func() {
+			startCountdown(DEFAULT_TIMERS["TOMATO"])
+		}),
+		fyne.NewMenuItem("Short break", func() {
+			startCountdown(DEFAULT_TIMERS["SHORT"])
+		}),
+		fyne.NewMenuItem("Long break", func() {
+			startCountdown(DEFAULT_TIMERS["LONG"])
+		}),
+		)
+	desk.SetSystemTrayMenu(menu)
 }
 
 // ==============================================> ICON
@@ -229,9 +203,6 @@ func buildSpace() *canvas.Text {
 func updateTimerTxt(timer int, timerTxt *canvas.Text) {
 	timerTxt.Text = formatTimer(timer) 
 	timerTxt.Refresh() 
-			
-	systray.SetTitle(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
-	systray.SetTooltip(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
 }
 
 func startCountdown(defaultTime int) {
