@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/systray"
 
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
@@ -82,6 +83,10 @@ func main() {
 	fmt.Println("window init...")
 
 	mainWindow.Show()
+	App.Lifecycle().SetOnStarted(func() {
+		systray.SetTooltip(APP_NAME)
+		systray.SetTitle(APP_NAME)
+	})
 	App.Run()
 }
 
@@ -202,7 +207,10 @@ func buildSpace() *canvas.Text {
 
 func updateTimerTxt(timer int, timerTxt *canvas.Text) {
 	timerTxt.Text = formatTimer(timer) 
-	timerTxt.Refresh() 
+	timerTxt.Refresh()
+
+	systray.SetTitle(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
+	systray.SetTooltip(fmt.Sprintf("%s (%s)", APP_NAME, timerTxt.Text))
 }
 
 func startCountdown(defaultTime int) {
