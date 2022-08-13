@@ -24,7 +24,7 @@ mkdir release\icon
 mkdir release\sounds
 
 COPY "icon\app-icon.png" "release\icon\app-icon.png"
-COPY "icon\icon.ico" "release\icon\icon.ico"
+COPY "icon\app-icon.ico" "release\icon\app-icon.ico"
 COPY "sounds\timer.mp3" "release\sounds\timer.mp3"
 
 ECHO Release app was built successfully!
