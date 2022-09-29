@@ -14,6 +14,7 @@
 
 ### TODO
 
+* [ ] Make 2 profiles that can be setup with diff breaks
 * [ ] when start timer its freeze on 1-2 sec
 * [ ] on space press, make some notif that its starts
 * [ ] change brakes timers 
