@@ -6,6 +6,15 @@
 ![](https://github.com/Nikeweke/pomadorik/blob/master/screenshots/Screenshot_2.png)
 ![](https://github.com/Nikeweke/pomadorik/blob/master/screenshots/Screenshot_3.png)
 
+<br />
+
+## Also don't miss one of my next application!
+
+* ### [Internet checker (made with Flutter)](https://github.com/Nikeweke/internet-checker) 
+
+
+<br />
+
 ### To make new icon 
 
 1. Go to `icon` folder
