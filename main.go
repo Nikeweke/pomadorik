@@ -24,12 +24,12 @@ import (
 	"time"
 )
 
-var TextColors = map[string]color.RGBA{
-  "green": color.RGBA{85, 165, 34, 1},
-  "grey": color.RGBA{82, 82, 82, 1},
-  "white": color.RGBA{255, 255, 255, 1},
-  "lightgrey": color.RGBA{57, 57, 57, 255},
-  "lightgrey2": color.RGBA{142, 142, 142, 255},
+var TextColors = map[string]color.NRGBA{
+  "green": {85, 165, 34, 255},
+  "grey": {82, 82, 82, 255},
+  "white": {255, 255, 255, 255},
+  "lightgrey": {57, 57, 57, 255},
+  "lightgrey2": {142, 142, 142, 255},
 }
 
 var TIMER = DEFAULT_TIMERS["TOMATO"] 
@@ -170,7 +170,7 @@ func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	return content
 }
 
-func buildTxtWithStyle(title string, textColor color.RGBA, textSize float32) *canvas.Text {
+func buildTxtWithStyle(title string, textColor color.NRGBA, textSize float32) *canvas.Text {
 	txt := canvas.NewText(title, textColor)
 	txt.TextSize = textSize
 	// txt.Alignment = fyne.TextAlignTrailing 
