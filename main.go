@@ -16,12 +16,11 @@ import (
 
 	"pomadorik/icon"
 
-	"io/ioutil"
-	"path/filepath"
-	"os"
+	"bytes"
 	"log"
 	"fmt"
 	"image/color"
+	"io"
 	"time"
 )
 
@@ -48,9 +47,8 @@ func main() {
 	mainWindow = App.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 
-	// set icon 
-	r, _ := LoadResourceFromPath("./icon/app-icon.png")
-	mainWindow.SetIcon(r)
+	// set icon
+	mainWindow.SetIcon(icon.Data)
 
 	if desk, ok := App.(desktop.App); ok {
 		setupSystray(desk)
@@ -132,22 +130,6 @@ func (r *StaticResource) Name() string {
 }
 func (r *StaticResource) Content() []byte {
 	return r.StaticContent
-}
-
-func LoadResourceFromPath(path string) (Resource, error) {
-	bytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-			return nil, err
-	}
-	name := filepath.Base(path)
-	return NewStaticResource(name, bytes), nil
-}
-
-func NewStaticResource(name string, content []byte) *StaticResource {
-	return &StaticResource{
-			StaticName:    name,
-			StaticContent: content,
-	}
 }
 
 func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
@@ -254,14 +236,9 @@ func startTimer(onTickFn func(*time.Ticker)) *time.Ticker {
 }
 
 func playSound() {
-	f, err := os.Open("./sounds/" + SOUND_FILE)
+	stream, format, err := mp3.Decode(io.NopCloser(bytes.NewReader(SOUND_FILE.Content())))
 	if err != nil {
-		log.Fatal("Unable to open sound " + SOUND_FILE)
-	}
-
-	stream, format, err := mp3.Decode(f)
-	if err != nil {
-		log.Fatal("Unable to stream sound " + SOUND_FILE)
+		log.Fatal("Unable to stream sound " + SOUND_FILE.Name())
 	}
 
 	volume := effects.Volume{ 
