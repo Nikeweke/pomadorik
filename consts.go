@@ -4,7 +4,8 @@ const APP_NAME = "Pomadorik"
 
 const APP_WIDTH = 250
 const APP_HEIGHT = 250
-const SOUND_FILE = "timer.mp3"
+
+var SOUND_FILE = resourceTimerMp3
 
 // pause name: seconds
 var DEFAULT_TIMERS = map[string]int{ 

@@ -16,21 +16,20 @@ import (
 
 	"pomadorik/icon"
 
-	"io/ioutil"
-	"path/filepath"
-	"os"
+	"bytes"
 	"log"
 	"fmt"
 	"image/color"
+	"io"
 	"time"
 )
 
-var TextColors = map[string]color.RGBA{
-  "green": color.RGBA{85, 165, 34, 1},
-  "grey": color.RGBA{82, 82, 82, 1},
-  "white": color.RGBA{255, 255, 255, 1},
-  "lightgrey": color.RGBA{57, 57, 57, 255},
-  "lightgrey2": color.RGBA{142, 142, 142, 255},
+var TextColors = map[string]color.NRGBA{
+  "green": {85, 165, 34, 255},
+  "grey": {82, 82, 82, 255},
+  "white": {255, 255, 255, 255},
+  "lightgrey": {57, 57, 57, 255},
+  "lightgrey2": {142, 142, 142, 255},
 }
 
 var TIMER = DEFAULT_TIMERS["TOMATO"] 
@@ -48,9 +47,8 @@ func main() {
 	mainWindow = App.NewWindow(APP_NAME)
 	mainWindow.Resize(fyne.NewSize(APP_WIDTH, APP_HEIGHT))
 
-	// set icon 
-	r, _ := LoadResourceFromPath("./icon/app-icon.png")
-	mainWindow.SetIcon(r)
+	// set icon
+	mainWindow.SetIcon(icon.Data)
 
 	if desk, ok := App.(desktop.App); ok {
 		setupSystray(desk)
@@ -134,22 +132,6 @@ func (r *StaticResource) Content() []byte {
 	return r.StaticContent
 }
 
-func LoadResourceFromPath(path string) (Resource, error) {
-	bytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-			return nil, err
-	}
-	name := filepath.Base(path)
-	return NewStaticResource(name, bytes), nil
-}
-
-func NewStaticResource(name string, content []byte) *StaticResource {
-	return &StaticResource{
-			StaticName:    name,
-			StaticContent: content,
-	}
-}
-
 func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	greenColor := TextColors["green"]
 
@@ -188,7 +170,7 @@ func buildContent(onBtnHandler BtnHandlerFn) fyne.CanvasObject {
 	return content
 }
 
-func buildTxtWithStyle(title string, textColor color.RGBA, textSize float32) *canvas.Text {
+func buildTxtWithStyle(title string, textColor color.NRGBA, textSize float32) *canvas.Text {
 	txt := canvas.NewText(title, textColor)
 	txt.TextSize = textSize
 	// txt.Alignment = fyne.TextAlignTrailing 
@@ -254,14 +236,9 @@ func startTimer(onTickFn func(*time.Ticker)) *time.Ticker {
 }
 
 func playSound() {
-	f, err := os.Open("./sounds/" + SOUND_FILE)
+	stream, format, err := mp3.Decode(io.NopCloser(bytes.NewReader(SOUND_FILE.Content())))
 	if err != nil {
-		log.Fatal("Unable to open sound " + SOUND_FILE)
-	}
-
-	stream, format, err := mp3.Decode(f)
-	if err != nil {
-		log.Fatal("Unable to stream sound " + SOUND_FILE)
+		log.Fatal("Unable to stream sound " + SOUND_FILE.Name())
 	}
 
 	volume := effects.Volume{ 
